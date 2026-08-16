@@ -1,0 +1,179 @@
+<!doctype html><html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070707"><link rel="manifest" href="manifest.webmanifest">
+<title>∞ املاک بینهایت V7</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#060606;color:#eee;font-family:Tahoma,Arial;padding-bottom:80px}
+.top{position:sticky;top:0;background:#090909ee;backdrop-filter:blur(12px);padding:12px;border-bottom:1px solid #252525;z-index:5}.brand{display:flex;gap:10px;align-items:center}.logo{font-size:42px;color:#e22;font-weight:900}.muted{color:#999;font-size:12px}.ticker{margin-top:7px;white-space:nowrap;overflow:hidden;font-size:12px}
+main{max-width:760px;margin:auto;padding:10px}.page{display:none}.page.active{display:block}.card,.item,.stat{background:#111;border:1px solid #292929;border-radius:16px;padding:12px;margin:8px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{text-align:center}.stat b{font-size:20px}
+input,select,textarea,button{width:100%;padding:11px;border-radius:11px;border:1px solid #333;background:#181818;color:#eee;margin:4px 0;font:inherit}textarea{min-height:80px}button{background:#e22;border-color:#e22;font-weight:700}.gray{background:#242424;border-color:#333}.row{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tag{background:#292929;border-radius:15px;padding:3px 7px;font-size:10px}.code{color:#ff5b66;font-weight:bold}.task{display:flex;gap:8px;padding:9px 0;border-bottom:1px solid #242424}.task input{width:auto}.done{text-decoration:line-through;color:#777}.progress{height:8px;background:#292929;border-radius:8px;overflow:hidden}.bar{height:100%;background:#e22;width:0}.photo{width:100%;max-height:230px;object-fit:cover;border-radius:10px;margin-top:6px}nav{position:fixed;bottom:0;left:0;right:0;background:#090909f5;border-top:1px solid #292929;display:grid;grid-template-columns:repeat(7,1fr);z-index:6;padding:5px 0}nav button{background:transparent;border:0;color:#999;font-size:10px;margin:0;padding:5px}nav button.on{color:#fff}.auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}.authbox{width:min(430px,100%);background:#111;border:1px solid #292929;border-radius:22px;padding:20px;text-align:center}.authlogo{font-size:70px;color:#e22;font-weight:900}.hide{display:none!important}.ok{color:#6de39a}.bad{color:#ff6872}
+</style>
+<style id="binahayat-navy-theme">
+:root{
+ --bh-navy:#07152f;--bh-navy2:#0b2147;--bh-blue:#1769aa;--bh-blue2:#2b8de0;
+ --bh-card:#0c1d39;--bh-card2:#10284d;--bh-line:#294b75;--bh-text:#edf5ff;--bh-muted:#aebed4;
+}
+html,body{background:linear-gradient(180deg,#040b18 0%,#07152f 52%,#081a35 100%) !important;color:var(--bh-text)!important}
+body{background-attachment:fixed!important}
+header,.topbar,.nav,.bottomnav,.tabs{background:rgba(4,13,30,.97)!important;border-color:var(--bh-line)!important}
+.card,.item,.box,.panel,.modal-content{background:linear-gradient(145deg,var(--bh-card),var(--bh-card2))!important;border-color:var(--bh-line)!important;color:var(--bh-text)!important;box-shadow:0 10px 30px rgba(0,0,0,.18)!important}
+input,select,textarea{background:#06132c!important;color:#f3f8ff!important;border:1px solid #315985!important}
+button,.btn{background:linear-gradient(135deg,#115b9f,#1978ca)!important;color:#fff!important;border:1px solid #328dd4!important}
+button:hover,.btn:hover{filter:brightness(1.12)}
+a{color:#69b8ff!important}.muted,.small{color:var(--bh-muted)!important}
+h1,h2,h3{color:#f5f9ff!important}
+.logo,.brand{filter:drop-shadow(0 5px 15px rgba(43,141,224,.35))}
+</style>
+
+</head><body>
+
+<section id="auth" class="auth"><div class="authbox"><div class="authlogo">∞</div><h1>املاک بینهایت</h1>
+<p class="muted">V7 • آفلاین‌اول + ذخیره ابری</p><input id="email" type="email" placeholder="ایمیل"><input id="password" type="password" placeholder="رمز عبور">
+<button onclick="login()">ورود</button><button class="gray" onclick="signup()">ثبت‌نام</button><button class="gray" onclick="offline()">ورود آفلاین</button><p id="msg"></p></div></section>
+
+<div id="app" class="hide"><header class="top"><div class="brand"><div class="logo">∞</div><div><b>املاک بینهایت</b><div class="muted">V7 • Offline First</div></div></div><div id="ticker" class="ticker">آماده...</div></header><main>
+
+<section id="home" class="page active"><div class="grid"><div class="stat"><b id="done">0</b><div class="muted">کار امروز</div></div><div class="stat"><b id="pct">0٪</b><div class="muted">پیشرفت</div></div></div>
+<div class="card"><h2>🔥 برنامه اجباری امروز</h2><div class="progress"><div id="bar" class="bar"></div></div><div id="tasks"></div><button class="gray" onclick="coach()">🚨 بررسی عملکرد</button></div>
+<div class="card"><h2>☁️ ذخیره</h2><div id="status" class="muted">📴 ذخیره محلی فعال است</div><button class="gray" onclick="sync()">همگام‌سازی ابری</button><button class="gray" onclick="backup()">📦 پشتیبان‌گیری</button><button class="gray" onclick="document.getElementById('restore').click()">📥 بازیابی پشتیبان</button><input id="restore" class="hide" type="file" accept=".json" onchange="restore(event)"></div></section>
+
+<section id="files" class="page"><div class="card"><h2>🏡 ثبت فایل / ویلا</h2>
+<input id="ft" placeholder="عنوان"><input id="fc" placeholder="کد فایل مثل F001"><select id="fty"><option>ویلا</option><option>باغ‌ویلا</option><option>باغچه</option><option>زمین</option><option>آپارتمان</option><option>تجاری</option></select>
+<div class="row"><input id="fa" placeholder="متراژ"><input id="fp" placeholder="قیمت"></div><div class="row"><input id="fo" placeholder="مالک"><input id="fn" placeholder="شماره مالک"></div><select id="deal"><option value="sale">فروش</option><option value="swap">تهاتر</option><option value="sale_swap">فروش یا تهاتر</option><option value="rent">رهن/اجاره</option></select><input id="swapWith" placeholder="در تهاتر چه چیزی می‌خواهد؟ مثلا آپارتمان، زمین، خودرو">
+<textarea id="fd" placeholder="توضیحات"></textarea><input id="photos" type="file" accept="image/*" multiple><button onclick="addFile()">ثبت فایل</button></div>
+<div class="card"><h2>📁 فایل‌ها</h2><input id="fs" oninput="renderFiles()" placeholder="جست‌وجو"><div id="flist"></div></div></section>
+
+<section id="customers" class="page"><div class="card"><h2>👤 مشتری جدید</h2><input id="cn" placeholder="نام"><input id="cp" placeholder="شماره"><div class="row"><input id="cb" placeholder="بودجه"><input id="cf" type="date"></div><input id="need" placeholder="نیاز / منطقه / نوع ملک"><button onclick="addCustomer()">ثبت مشتری</button></div><div class="card"><h2>📞 مشتری‌ها</h2><input id="cs" oninput="renderCustomers()" placeholder="جست‌وجو"><div id="clist"></div></div></section>
+
+<section id="ads" class="page"><div class="card"><h2>📢 برنامه دیوار</h2><div id="ads"></div></div><div class="card"><h2>✍️ متن آگهی</h2><input id="adtitle" placeholder="تیتر"><textarea id="adtext" placeholder="متن فروش"></textarea><button onclick="copyAd()">کپی متن</button></div></section>
+
+<section id="book" class="page"><div class="card"><h2>📚 کتاب بینهایت</h2><select id="chapter" onchange="bookOpen()"></select><div class="item"><h3 id="bookTitle"></h3><div id="bookText"></div></div><button onclick="bookRead()">✅ این فصل را خواندم</button><div id="history"></div></div></section>
+
+<section id="consult" class="page">
+<div class="card"><h2>🧠 مشاوره هوشمند املاک</h2>
+<p class="muted">مشتری را انتخاب کن تا فایل‌های مناسب پیشنهاد شوند، یا فایل را انتخاب کن تا مشتری‌های مناسب را پیدا کنیم.</p>
+<select id="matchCustomer" onchange="smartMatchCustomer()"><option value="">انتخاب مشتری...</option></select>
+<div id="customerMatches"></div>
+<hr>
+<select id="matchFile" onchange="smartMatchFile()"><option value="">انتخاب فایل...</option></select>
+<div id="fileMatches"></div>
+</div>
+<div class="card"><h2>🤝 پیشنهاد تهاتر</h2>
+<p class="muted">فقط فایل‌هایی که «تهاتر» دارند در پیشنهادها اولویت می‌گیرند.</p>
+<div id="barterMatches"></div>
+</div>
+<div class="card"><h2>💡 راهنمای معامله</h2>
+<div id="advice"></div>
+</div>
+</section>
+
+<section id="accounts" class="page"><div class="card"><h2>💰 حسابداری بینهایت</h2><div class="grid"><div class="stat"><b id="rec">0</b><div class="muted">طلب</div></div><div class="stat"><b id="pay">0</b><div class="muted">بدهی</div></div><div class="stat"><b id="inc">0</b><div class="muted">دریافتی</div></div><div class="stat"><b id="exp">0</b><div class="muted">پرداختی</div></div></div></div>
+<div class="card"><h2>➕ ثبت حساب</h2><select id="part"><option>من و منصور</option><option>من و صابر</option><option>حساب دفتر املاک</option><option>حساب با دیگران</option></select><div class="row"><select id="type"><option value="receivable">طلب</option><option value="payable">بدهی</option><option value="income">دریافتی</option><option value="expense">پرداختی</option></select><input id="amount" type="number" placeholder="مبلغ تومان"></div><input id="person" placeholder="طرف حساب"><input id="desc" placeholder="شرح"><button onclick="addAccount()">ثبت</button></div>
+<div class="card"><h2>📄 قرارداد و کمیسیون</h2><input id="ct" placeholder="ملک / قرارداد"><div class="row"><input id="ca" type="number" placeholder="مبلغ معامله"><input id="cm" type="number" placeholder="کمیسیون"></div><div class="row"><input id="ms" type="number" placeholder="سهم من"><input id="ps" type="number" placeholder="سهم شریک"></div><button onclick="addContract()">ثبت قرارداد</button></div><div class="card"><h2>📒 سوابق</h2><div id="alist"></div><div id="contracts"></div></div></section>
+
+</main><nav><button class="on" onclick="go('home',this)">🏠<br>امروز</button><button onclick="go('files',this)">🏡<br>فایل</button><button onclick="go('customers',this)">👤<br>مشتری</button><button onclick="go('ads',this)">📢<br>دیوار</button><button onclick="go('book',this)">📚<br>کتاب</button><button onclick="go('consult',this)">🧠<br>مشاوره</button><button onclick="go('accounts',this)">💰<br>حساب</button></nav></div>
+
+<script>
+const URL="https://ssrdnwcckynnropeguec.supabase.co",KEY="sb_publishable_u05L1lX2k56vyIDLMahOxw_zTUVSKIV";
+const supabase=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const STORE="binahayat-v7";let user=null,db=JSON.parse(localStorage.getItem(STORE)||'{"tasks":{},"files":[],"customers":[],"study":[],"accounts":[],"contracts":{}}');
+const daily=["۱۰ تماس با مشتری","پیگیری ۵ مشتری قدیمی","گرفتن ۲ فایل جدید","ثبت و مرتب‌سازی فایل‌ها","انتشار حداقل ۲ آگهی دیوار","۳۰ دقیقه مطالعه کتاب بینهایت","یک محتوای اینستاگرام","مرور پیگیری‌های عقب‌افتاده"];
+const chapters=[
+["فصل ۱ — شروع متفاوت","املاک فقط خرید و فروش ملک نیست؛ ساختن اعتماد است. هر روز تماس، پیگیری، فایل‌گیری و مطالعه را انجام بده."],
+["فصل ۲ — فایل‌یابی حرفه‌ای","منابع فایل را بشناس و مشخصات ملک را دقیق ثبت کن."],
+["فصل ۳ — شناخت مشتری","بودجه، منطقه، نیاز و زمان خرید را ثبت کن."],
+["فصل ۴ — پیگیری","پیگیری منظم باعث می‌شود مشتری و معامله از دست نرود."],
+["فصل ۵ — آگهی دیوار","تیتر واضح، عکس خوب و توضیحات شفاف، پایه آگهی خوب است."],
+["فصل ۶ — بازدید","قبل و بعد از بازدید نتیجه را ثبت کن."],
+["فصل ۷ — قرارداد","مبلغ‌ها، سهم‌ها و تعهدات را شفاف ثبت کن."],
+["فصل ۸ — حسابداری","طلب، بدهی، دریافتی و پرداختی را همان روز ثبت کن."],
+["فصل ۹ — برند","اعتماد و پیگیری منظم، برند مشاور را می‌سازد."],
+["فصل ۱۰ — نظم","اول کارهای مهم، بعد حاشیه‌ها."],
+["فصل ۱۱ — قیمت‌گذاری","قیمت را با مقایسه فایل‌های مشابه، موقعیت، سند، دسترسی و شرایط معامله بررسی کن."],
+["فصل ۱۲ — مذاکره","اول نیاز واقعی طرفین را بفهم، بعد درباره عدد مذاکره کن."],
+["فصل ۱۳ — تهاتر","در تهاتر، ارزش هر دو طرف، مابه‌التفاوت و شرایط انتقال را شفاف ثبت کن."],
+["فصل ۱۴ — زمین و باغ","کاربری، سند، دسترسی، انشعابات و محدودیت‌های قانونی را قبل از وعده قطعی بررسی کن."],
+["فصل ۱۵ — باغ‌ویلا","متراژ، بنا، آب، برق، گاز، سند، دسترسی و وضعیت بنا را دقیق ثبت کن."],
+["فصل ۱۶ — مشتری سرمایه‌گذار","هدف، بازه زمانی، نقدینگی و ریسک‌پذیری مشتری را ثبت کن."],
+["فصل ۱۷ — مشتری مصرفی","نیاز واقعی، بودجه، منطقه و زمان خرید را به معیارهای قابل جست‌وجو تبدیل کن."],
+["فصل ۱۸ — مدیریت فایل","هر فایل باید کد، وضعیت، مالک، تاریخ ثبت و اقدام بعدی داشته باشد."],
+["فصل ۱۹ — مدیریت مشتری","هر مشتری باید نیاز، بودجه، آخرین پیگیری و اقدام بعدی داشته باشد."],
+["فصل ۲۰ — بستن معامله","قبل از امضا، مشخصات طرفین، ملک، مبلغ، تعهدات و زمان‌بندی را دوباره کنترل کن."]
+];
+const day=()=>new Date().toLocaleDateString("en-CA"), stamp=()=>new Date().toLocaleString("fa-IR",{dateStyle:"short",timeStyle:"short"}),now=()=>new Date().toISOString(),uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+Math.random();
+
+function local(){localStorage.setItem(STORE,JSON.stringify(db))}
+async function cloud(){if(!user)return;let r=await supabase.from("app_data").upsert({user_id:user.id,data:db,updated_at:now()},{onConflict:"user_id"});if(r.error)throw r.error}
+async function save(){local();if(!user){status.textContent="📴 ذخیره محلی شد • "+stamp();return}try{await cloud();status.textContent="☁️ ذخیره شد • "+stamp()}catch(e){status.textContent="📴 محلی ذخیره شد؛ ابر بعداً همگام می‌شود"}}
+async function login(){let r=await supabase.auth.signInWithPassword({email:email.value.trim(),password:password.value});if(r.error){msg.textContent=r.error.message;return}user=r.data.user;await loadCloud();show()}
+async function signup(){let r=await supabase.auth.signUp({email:email.value.trim(),password:password.value});msg.textContent=r.error?r.error.message:"حساب ساخته شد؛ در صورت نیاز ایمیل را تأیید کن."}
+function offline(){user=null;show()}
+async function loadCloud(){if(!user)return;let r=await supabase.from("app_data").select("data").eq("user_id",user.id).maybeSingle();if(r.data?.data){db={...db,...r.data.data};local()}else if(!r.error)await cloud()}
+async function sync(){if(!user){alert("برای ذخیره ابری وارد حساب شو.");return}await save();alert("☁️ همگام شد")}
+function show(){auth.classList.add("hide");app.classList.remove("hide");renderAll()}
+function tasksRender(){if(!db.tasks[day()])db.tasks[day()]=daily.map(()=>false);tasks.innerHTML=daily.map((x,i)=>`<div class="task"><input type="checkbox" ${db.tasks[day()][i]?"checked":""} onchange="task(${i},this.checked)"><span class="${db.tasks[day()][i]?"done":""}">${x}</span></div>`).join("");let n=db.tasks[day()].filter(Boolean).length;done.textContent=n;pct.textContent=Math.round(n/daily.length*100)+"٪";bar.style.width=n/daily.length*100+"%";local()}
+async function task(i,v){db.tasks[day()][i]=v;await save();tasksRender()}function coach(){let n=db.tasks[day()].filter(Boolean).length;alert(n<daily.length?"🚨 هنوز "+(daily.length-n)+" کار باقی مانده.":"🏆 امروز کامل شد!")}
+async function readImages(list){let a=[];for(let f of list){if(f.size>1000000)continue;a.push({name:f.name,type:f.type,data:await new Promise(r=>{let x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)})})}return a}
+function fileCode(){let n=Math.max(0,...db.files.map(x=>parseInt(String(x.code||"").replace(/\D/g,""))||0))+1;return"F"+String(n).padStart(3,"0")}
+async function addFile(){db.files.unshift({id:uid(),code:fc.value.trim()||fileCode(),t:ft.value,y:fty.value,a:fa.value,p:fp.value,o:fo.value,n:fn.value,d:fd.value,deal:deal.value,swapWith:swapWith.value,photos:await readImages(photos.files),createdAt:now(),updatedAt:now()});[ft,fc,fa,fp,fo,fn,fd,swapWith].forEach(x=>x.value="");deal.value="sale";photos.value="";await save();renderFiles();tickerUpdate()}
+function renderFiles(){let q=(fs.value||"").toLowerCase(),a=db.files.filter(x=>JSON.stringify(x).toLowerCase().includes(q));flist.innerHTML=a.map((f,i)=>`<div class="item"><span class="code">${f.code}</span> <b>${f.t||"-"}</b> <span class="tag">${f.y}</span><br>📐 ${f.a||"-"} | 💰 ${f.p||"-"}<br>👤 ${f.o||"-"} | 📞 ${f.n||"-"}<br>🔄 ${f.deal==="swap"?"تهاتر":f.deal==="sale_swap"?"فروش یا تهاتر":f.deal==="rent"?"رهن/اجاره":"فروش"} ${f.swapWith?("• "+f.swapWith):""}<br>${f.d||""}<br>${(f.photos||[]).map(p=>`<img class="photo" src="${p.data}">`).join("")}<span class="muted">ثبت: ${f.createdAt?new Date(f.createdAt).toLocaleString("fa-IR"):"-"}</span><div class="row"><button class="gray" onclick="shareFile(${i})">📤 ارسال / واتساپ</button><button class="gray" onclick="delFile(${i})">حذف</button></div></div>`).join("")||"فایلی نیست"}
+async function delFile(i){db.files.splice(i,1);await save();renderFiles();tickerUpdate()}
+async function shareFile(i){let f=db.files[i],text=`∞ املاک بینهایت\n${f.code} — ${f.t||""}\nنوع: ${f.y}\nمتراژ: ${f.a||""}\nقیمت: ${f.p||""}\nمالک: ${f.o||""}\n${f.d||""}`;let files=[];for(let p of f.photos||[]){try{let b=await(await fetch(p.data)).blob();files.push(new File([b],p.name||"photo.jpg",{type:p.type||b.type}))}catch{}}try{if(navigator.share){if(files.length&&navigator.canShare?.({files}))await navigator.share({title:f.t,text,files});else await navigator.share({title:f.t,text});return}}catch{}await navigator.clipboard?.writeText(text);alert("متن فایل کپی شد؛ از Share گوشی WhatsApp را انتخاب کن.")}
+async function addCustomer(){db.customers.unshift({id:uid(),code:"C"+String(db.customers.length+1).padStart(3,"0"),n:cn.value,p:cp.value,b:cb.value,f:cf.value,need:need.value,createdAt:now()});[cn,cp,cb,cf,need].forEach(x=>x.value="");await save();renderCustomers();tickerUpdate()}
+function renderCustomers(){let q=(cs.value||"").toLowerCase(),a=db.customers.filter(x=>JSON.stringify(x).toLowerCase().includes(q));clist.innerHTML=a.map(c=>`<div class="item"><b>${c.n||"-"}</b> <span class="code">${c.code}</span><br>📞 ${c.p||"-"} | 💰 ${c.b||"-"}<br>🏡 ${c.need||"-"}<br><span class="muted">ثبت: ${new Date(c.createdAt).toLocaleString("fa-IR")}</span></div>`).join("")||"مشتری نیست"}
+function tickerUpdate(){let a=[...db.files.map(x=>`🏡 ${x.code} • ${x.t||"فایل"}`),...db.customers.map(x=>`👤 ${x.code} • ${x.n||"مشتری"}`)];ticker.textContent=a.length?a[Math.floor(Date.now()/3500)%a.length]:"∞ امروز فایل جدید بگیر و مشتری پیگیری کن"}
+function copyAd(){navigator.clipboard?.writeText((adtitle.value?adtitle.value+"\n":"")+adtext.value);alert("کپی شد")}
+function initAds(){ads.innerHTML=["انتخاب فایل","تیتر","متن فروش","عکس","انتشار","پاسخ","پیگیری"].map(x=>`<div class="task"><input type="checkbox"><span>${x}</span></div>`).join("")}
+function initBook(){chapter.innerHTML=chapters.map((x,i)=>`<option value="${i}">${x[0]}</option>`).join("");bookOpen()}
+function bookOpen(){let c=chapters[+chapter.value||0];bookTitle.textContent=c[0];bookText.innerHTML="<p>"+c[1]+"</p><p><b>تمرین:</b> همین امروز اجرا کن.</p>"}
+async function bookRead(){db.study.unshift({d:day(),l:chapter.options[chapter.selectedIndex].text,at:now()});await save();studyRender()}
+function studyRender(){history.innerHTML=(db.study||[]).map(x=>`<div class="item">✅ ${x.d} — ${x.l}<br><span class="muted">${new Date(x.at).toLocaleString("fa-IR")}</span></div>`).join("")}
+async function addAccount(){let n=+amount.value;if(!n)return alert("مبلغ را وارد کن");db.accounts.unshift({id:uid(),part:part.value,type:type.value,amount:n,person:person.value,desc:desc.value,createdAt:now()});[amount,person,desc].forEach(x=>x.value="");await save();accountsRender()}
+async function addContract(){if(!ct.value.trim())return alert("عنوان قرارداد را وارد کن");db.contracts.unshift({id:uid(),title:ct.value,amount:+ca.value||0,commission:+cm.value||0,my:+ms.value||0,partner:+ps.value||0,createdAt:now()});[ct,ca,cm,ms,ps].forEach(x=>x.value="");await save();accountsRender()}
+function money(n){return Number(n||0).toLocaleString("fa-IR")}
+function accountsRender(){let a=db.accounts||[];rec.textContent=money(a.filter(x=>x.type=="receivable").reduce((s,x)=>s+x.amount,0));pay.textContent=money(a.filter(x=>x.type=="payable").reduce((s,x)=>s+x.amount,0));inc.textContent=money(a.filter(x=>x.type=="income").reduce((s,x)=>s+x.amount,0));exp.textContent=money(a.filter(x=>x.type=="expense").reduce((s,x)=>s+x.amount,0));alist.innerHTML=a.map(x=>`<div class="item"><b>${x.part}</b> • ${x.person||"-"}<br>${x.desc||""} • ${money(x.amount)}<br><span class="muted">${new Date(x.createdAt).toLocaleString("fa-IR")}</span></div>`).join("")||"حسابی نیست";contracts.innerHTML=(db.contracts||[]).map(x=>`<div class="item"><b>${x.title}</b><br>معامله ${money(x.amount)} • کمیسیون ${money(x.commission)}<br>سهم من ${money(x.my)} • شریک ${money(x.partner)}<br><span class="muted">${new Date(x.createdAt).toLocaleString("fa-IR")}</span></div>`).join("")||"قراردادی نیست"}
+function backup(){let b=new Blob([JSON.stringify({version:"V7",exportedAt:now(),data:db})],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="Binahayat-Backup-"+day()+".json";a.click()}
+function restore(e){let r=new FileReader();r.onload=async()=>{try{let x=JSON.parse(r.result);if(!x.data)throw 0;db={...db,...x.data};await save();renderAll();alert("📦 بازیابی شد")}catch{alert("پشتیبان نامعتبر است")}};r.readAsText(e.target.files[0])}
+function go(id,b){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));b.classList.add("on")}
+
+function scoreCustomerFile(c,f){
+  let s=0, reasons=[];
+  const budget=Number(String(c.b||"").replace(/[^\d]/g,""))||0;
+  const price=Number(String(f.p||"").replace(/[^\d]/g,""))||0;
+  const need=(c.need||"").toLowerCase();
+  const type=(f.y||"").toLowerCase();
+  if(need && (need.includes(type)||type.includes(need))) {s+=35;reasons.push("نوع ملک مناسب")}
+  if(budget && price){
+    const diff=Math.abs(price-budget)/Math.max(budget,1);
+    if(diff<=.10){s+=40;reasons.push("قیمت نزدیک بودجه")}
+    else if(diff<=.25){s+=25;reasons.push("قیمت نسبتاً نزدیک")}
+    else if(diff<=.5){s+=10}
+  }
+  if(f.deal==="swap"||f.deal==="sale_swap"){s+=10;reasons.push("گزینه تهاتر")}
+  if((need.includes("تهاتر")||need.includes("تعویض"))&&(f.deal==="swap"||f.deal==="sale_swap")){s+=15;reasons.push("نیاز تهاتر")}
+  return {score:Math.min(100,s),reasons};
+}
+function smartMatchCustomer(){
+  const id=matchCustomer.value; if(!id){customerMatches.innerHTML="";return}
+  const c=db.customers.find(x=>x.id===id); if(!c)return;
+  const a=db.files.map(f=>({f,m:scoreCustomerFile(c,f)})).filter(x=>x.m.score>0).sort((a,b)=>b.m.score-a.m.score).slice(0,8);
+  customerMatches.innerHTML=a.length?a.map(x=>`<div class="item"><b>${x.f.code} — ${x.f.t||"-"}</b><br>🎯 تطابق: <b>${x.m.score}%</b><br>${x.m.reasons.join(" • ")||"نیاز به بررسی"}<br>💰 ${x.f.p||"-"} | 🔄 ${x.f.deal==="swap"||x.f.deal==="sale_swap"?"تهاتر":"فروش"}</div>`).join(""):"فایل مناسب پیدا نشد.";
+  advice.innerHTML=`<b>پیشنهاد مشاور:</b> ابتدا گزینه‌های بالای ۷۰٪ را تماس بگیر و نتیجه تماس را در مشتری ثبت کن. این امتیاز «پیشنهاد نرم‌افزاری» است و جای بررسی واقعی ملک و مدارک را نمی‌گیرد.`;
+}
+function smartMatchFile(){
+  const id=matchFile.value; if(!id){fileMatches.innerHTML="";return}
+  const f=db.files.find(x=>x.id===id); if(!f)return;
+  const a=db.customers.map(c=>({c,m:scoreCustomerFile(c,f)})).filter(x=>x.m.score>0).sort((a,b)=>b.m.score-a.m.score).slice(0,8);
+  fileMatches.innerHTML=a.length?a.map(x=>`<div class="item"><b>${x.c.n||"-"} — ${x.c.code}</b><br>🎯 تطابق: <b>${x.m.score}%</b><br>${x.m.reasons.join(" • ")}</div>`).join(""):"مشتری مناسب پیدا نشد.";
+}
+function renderConsult(){
+  matchCustomer.innerHTML='<option value="">انتخاب مشتری...</option>'+db.customers.map(c=>`<option value="${c.id}">${c.code} — ${c.n||"بدون نام"}</option>`).join("");
+  matchFile.innerHTML='<option value="">انتخاب فایل...</option>'+db.files.map(f=>`<option value="${f.id}">${f.code} — ${f.t||"بدون عنوان"}</option>`).join("");
+  const swaps=db.files.filter(f=>f.deal==="swap"||f.deal==="sale_swap");
+  barterMatches.innerHTML=swaps.length?swaps.map(f=>`<div class="item"><b>${f.code} — ${f.t||"-"}</b><br>🔄 ${f.swapWith||"نوع تهاتر مشخص نشده"}<br>💰 ${f.p||"-"}</div>`).join(""):"فایل تهاتری ثبت نشده.";
+}
+function renderAll(){tasksRender();renderFiles();renderCustomers();initAds();initBook();studyRender();accountsRender();renderConsult();tickerUpdate()}
+supabase.auth.getSession().then(async r=>{if(r.data.session){user=r.data.session.user;await loadCloud()}show()});window.addEventListener("online",()=>user&&sync());
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=9").catch(()=>{}))}
+</script></body></html>
