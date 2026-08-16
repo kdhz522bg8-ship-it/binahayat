@@ -2754,3 +2754,85 @@ window.addEventListener(
 
  }
 );
+async function startApp(){
+
+ try{
+
+  const diagnostic =
+  document.getElementById("cloudDiag");
+
+
+  if(navigator.onLine){
+
+   diagnostic.textContent =
+   "☁️ اینترنت وصل است؛ بررسی حساب ابری...";
+
+
+   const result =
+   await supabaseClient.auth.getSession();
+
+
+   if(
+    result.data &&
+    result.data.session
+   ){
+
+    user =
+    result.data.session.user;
+
+
+    localStorage.setItem(
+     "binahayat-offline-session",
+     JSON.stringify({
+      id:user.id,
+      email:user.email
+     })
+    );
+
+
+    await loadCloud();
+
+    showApp();
+
+    return;
+
+   }
+
+
+   diagnostic.textContent =
+   "☁️ فضای ابری آماده است؛ می‌توانی ثبت‌نام کنی.";
+
+  }else{
+
+   diagnostic.textContent =
+   "📴 اینترنت قطع است؛ حالت آفلاین آماده است.";
+
+  }
+
+
+ }catch(error){
+
+  console.log(error);
+
+  document.getElementById("cloudDiag").textContent =
+  "📴 ذخیره محلی فعال است؛ فضای ابری بعداً قابل استفاده است.";
+
+ }
+
+}
+
+
+document.addEventListener(
+ "DOMContentLoaded",
+ function(){
+
+  startApp();
+
+ }
+);
+
+
+</script>
+
+</body>
+</html>
