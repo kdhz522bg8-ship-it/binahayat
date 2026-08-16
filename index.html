@@ -266,6 +266,38 @@ window.addEventListener("offline",()=>{if(user)status.textContent="📴 آفلا
   }catch(e){}
 })();
 function renderAll(){tasksRender();renderFiles();renderCustomers();initAds();initBook();studyRender();accountsRender();renderConsult();tickerUpdate()}
-supabaseClient.auth.getSession().then(async r=>{if(r.data.session){user=r.data.session.user;await loadCloud()}show()});window.addEventListener("online",()=>user&&sync());
+supabaseReady.then(async ok=>{
+  try{
+    if(ok && supabaseClient && navigator.onLine){
+      const r=await supabaseClient.auth.getSession();
+
+      if(r.data?.session){
+        user=r.data.session.user;
+
+        localStorage.setItem(
+          "binahayat-offline-session",
+          JSON.stringify({
+            id:user.id,
+            email:user.email
+          })
+        );
+
+        try{
+          await loadCloud();
+        }catch(e){}
+
+        show();
+      }
+    }
+  }catch(e){}
+});
+
+window.addEventListener("online",async()=>{
+  if(user){
+    try{
+      await sync();
+    }catch(e){}
+  }
+});
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=91").catch(()=>{}))}
 </script></body></html>
