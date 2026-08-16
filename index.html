@@ -633,3 +633,633 @@ placeholder="مبلغ تومان">
 </nav>
 
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const SUPABASE_URL =
+"https://ssrdnwcckynnropeguec.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_u05L1lX2k56vyIDLMahOxw_zTUVSKIV";
+
+let supabaseClient =
+window.supabase.createClient(
+ SUPABASE_URL,
+ SUPABASE_KEY,
+ {
+  auth:{
+   persistSession:true,
+   autoRefreshToken:true,
+   detectSessionInUrl:true
+  }
+ }
+);
+
+
+const STORE = "binahayat-v8";
+
+const DEFAULT_DB = {
+ tasks:{},
+ files:[],
+ customers:[],
+ study:[],
+ accounts:[],
+ contracts:[]
+};
+
+
+let db =
+JSON.parse(
+ localStorage.getItem(STORE) ||
+ JSON.stringify(DEFAULT_DB)
+);
+
+db.tasks ||= {};
+db.files ||= [];
+db.customers ||= [];
+db.study ||= [];
+db.accounts ||= [];
+db.contracts ||= [];
+
+
+let user = null;
+
+
+const daily = [
+"۱۰ تماس با مشتری",
+"پیگیری ۵ مشتری قدیمی",
+"گرفتن ۲ فایل جدید",
+"ثبت و مرتب‌سازی فایل‌ها",
+"انتشار حداقل ۲ آگهی دیوار",
+"۳۰ دقیقه مطالعه کتاب بینهایت",
+"یک محتوای اینستاگرام",
+"مرور پیگیری‌های عقب‌افتاده"
+];
+
+
+const chapters = [
+
+[
+"فصل ۱ — شروع متفاوت",
+"املاک فقط خرید و فروش ملک نیست؛ ساختن اعتماد است. هر روز تماس، پیگیری، فایل‌گیری و مطالعه را انجام بده."
+],
+
+[
+"فصل ۲ — فایل‌یابی حرفه‌ای",
+"منابع فایل را بشناس و مشخصات ملک را دقیق ثبت کن."
+],
+
+[
+"فصل ۳ — شناخت مشتری",
+"بودجه، منطقه، نیاز و زمان خرید را ثبت کن."
+],
+
+[
+"فصل ۴ — پیگیری",
+"پیگیری منظم باعث می‌شود مشتری و معامله از دست نرود."
+],
+
+[
+"فصل ۵ — آگهی دیوار",
+"تیتر واضح، عکس خوب و توضیحات شفاف پایه آگهی خوب است."
+],
+
+[
+"فصل ۶ — بازدید",
+"قبل و بعد از بازدید نتیجه را ثبت کن."
+],
+
+[
+"فصل ۷ — قرارداد",
+"مبلغ‌ها، سهم‌ها و تعهدات را شفاف ثبت کن."
+],
+
+[
+"فصل ۸ — حسابداری",
+"طلب، بدهی، دریافتی و پرداختی را همان روز ثبت کن."
+],
+
+[
+"فصل ۹ — برند",
+"اعتماد و پیگیری منظم، برند مشاور را می‌سازد."
+],
+
+[
+"فصل ۱۰ — نظم",
+"اول کارهای مهم، بعد حاشیه‌ها."
+],
+
+[
+"فصل ۱۱ — قیمت‌گذاری",
+"قیمت را با مقایسه فایل‌های مشابه، موقعیت، سند، دسترسی و شرایط معامله بررسی کن."
+],
+
+[
+"فصل ۱۲ — مذاکره",
+"اول نیاز واقعی طرفین را بفهم، بعد درباره عدد مذاکره کن."
+],
+
+[
+"فصل ۱۳ — تهاتر",
+"در تهاتر ارزش هر دو طرف، مابه‌التفاوت و شرایط انتقال را شفاف ثبت کن."
+],
+
+[
+"فصل ۱۴ — زمین و باغ",
+"کاربری، سند، دسترسی، انشعابات و محدودیت‌های قانونی را قبل از وعده قطعی بررسی کن."
+],
+
+[
+"فصل ۱۵ — باغ‌ویلا",
+"متراژ، بنا، آب، برق، گاز، سند، دسترسی و وضعیت بنا را دقیق ثبت کن."
+],
+
+[
+"فصل ۱۶ — مشتری سرمایه‌گذار",
+"هدف، بازه زمانی، نقدینگی و ریسک‌پذیری مشتری را ثبت کن."
+],
+
+[
+"فصل ۱۷ — مشتری مصرفی",
+"نیاز واقعی، بودجه، منطقه و زمان خرید را به معیارهای قابل جست‌وجو تبدیل کن."
+],
+
+[
+"فصل ۱۸ — مدیریت فایل",
+"هر فایل باید کد، وضعیت، مالک، تاریخ ثبت و اقدام بعدی داشته باشد."
+],
+
+[
+"فصل ۱۹ — مدیریت مشتری",
+"هر مشتری باید نیاز، بودجه، آخرین پیگیری و اقدام بعدی داشته باشد."
+],
+
+[
+"فصل ۲۰ — بستن معامله",
+"قبل از امضا مشخصات طرفین، ملک، مبلغ، تعهدات و زمان‌بندی را دوباره کنترل کن."
+]
+
+];
+
+
+function day(){
+ return new Date().toLocaleDateString("en-CA");
+}
+
+
+function now(){
+ return new Date().toISOString();
+}
+
+
+function stamp(){
+ return new Date().toLocaleString(
+  "fa-IR",
+  {
+   dateStyle:"short",
+   timeStyle:"short"
+  }
+ );
+}
+
+
+function uid(){
+ if(window.crypto && crypto.randomUUID)
+  return crypto.randomUUID();
+
+ return Date.now()+"-"+Math.random();
+}
+
+
+function localSave(){
+
+ localStorage.setItem(
+  STORE,
+  JSON.stringify(db)
+ );
+
+}
+
+
+async function cloudSave(){
+
+ if(!user || user.offline)
+  return;
+
+ const result =
+ await supabaseClient
+ .from("app_data")
+ .upsert(
+  {
+   user_id:user.id,
+   data:db,
+   updated_at:now()
+  },
+  {
+   onConflict:"user_id"
+  }
+ );
+
+ if(result.error)
+  throw result.error;
+
+}
+
+
+async function save(){
+
+ localSave();
+
+ if(!user){
+
+  document.getElementById("status").textContent =
+  "📴 ذخیره محلی شد • "+stamp();
+
+  return;
+ }
+
+ if(user.offline){
+
+  document.getElementById("status").textContent =
+  "📴 ذخیره آفلاین شد • "+stamp();
+
+  return;
+ }
+
+ try{
+
+  await cloudSave();
+
+  document.getElementById("status").textContent =
+  "☁️ روی گوشی و فضای ابری ذخیره شد • "+stamp();
+
+ }catch(error){
+
+  document.getElementById("status").textContent =
+  "📴 روی گوشی ذخیره شد؛ ابر بعداً همگام می‌شود";
+
+ }
+
+}
+
+
+async function login(){
+
+ const e =
+ document.getElementById("email").value.trim();
+
+ const p =
+ document.getElementById("password").value;
+
+ const msg =
+ document.getElementById("msg");
+
+
+ if(!e || !p){
+
+  msg.textContent =
+  "ایمیل و رمز عبور را وارد کن.";
+
+  return;
+ }
+
+
+ if(!navigator.onLine){
+
+  const saved =
+  JSON.parse(
+   localStorage.getItem(
+    "binahayat-offline-session"
+   ) || "null"
+  );
+
+  if(saved && saved.email===e){
+
+   user = {
+    id:saved.id,
+    email:saved.email,
+    offline:true
+   };
+
+   showApp();
+
+   return;
+
+  }
+
+  msg.textContent =
+  "اولین ورود باید با اینترنت انجام شود.";
+
+  return;
+
+ }
+
+
+ try{
+
+  const result =
+  await supabaseClient.auth.signInWithPassword({
+   email:e,
+   password:p
+  });
+
+
+  if(result.error){
+
+   msg.textContent =
+   "خطا: "+result.error.message;
+
+   return;
+  }
+
+
+  user =
+  result.data.user;
+
+
+  localStorage.setItem(
+   "binahayat-offline-session",
+   JSON.stringify({
+    id:user.id,
+    email:user.email
+   })
+  );
+
+
+  await loadCloud();
+
+  showApp();
+
+
+ }catch(error){
+
+  msg.textContent =
+  "خطا در اتصال به فضای ابری.";
+
+ }
+
+}
+
+
+async function signup(){
+
+ const e =
+ document.getElementById("email").value.trim();
+
+ const p =
+ document.getElementById("password").value;
+
+ const p2 =
+ document.getElementById("password2").value;
+
+ const msg =
+ document.getElementById("msg");
+
+
+ if(!e || !p){
+
+  msg.textContent =
+  "ایمیل و رمز را وارد کن.";
+
+  return;
+ }
+
+
+ if(p.length<6){
+
+  msg.textContent =
+  "رمز عبور باید حداقل ۶ کاراکتر باشد.";
+
+  return;
+ }
+
+
+ if(p!==p2){
+
+  msg.textContent =
+  "تکرار رمز عبور صحیح نیست.";
+
+  return;
+ }
+
+
+ if(!navigator.onLine){
+
+  msg.textContent =
+  "ساخت حساب ابری به اینترنت نیاز دارد.";
+
+  return;
+ }
+
+
+ try{
+
+  const result =
+  await supabaseClient.auth.signUp({
+   email:e,
+   password:p
+  });
+
+
+  if(result.error){
+
+   msg.textContent =
+   "خطا: "+result.error.message;
+
+   return;
+  }
+
+
+  if(result.data.session){
+
+   user =
+   result.data.user;
+
+   localStorage.setItem(
+    "binahayat-offline-session",
+    JSON.stringify({
+     id:user.id,
+     email:user.email
+    })
+   );
+
+   await cloudSave();
+
+   showApp();
+
+   return;
+  }
+
+
+  msg.textContent =
+  "حساب ساخته شد. اگر تأیید ایمیل فعال است، ایمیل را تأیید کن و سپس وارد شو.";
+
+ }catch(error){
+
+  msg.textContent =
+  "خطا در ساخت حساب.";
+
+ }
+
+}
+
+
+function offline(){
+
+ let saved =
+ JSON.parse(
+  localStorage.getItem(
+   "binahayat-offline-session"
+  ) || "null"
+ );
+
+
+ if(!saved){
+
+  saved = {
+   id:"offline-"+uid(),
+   email:"offline@binahayat.local"
+  };
+
+  localStorage.setItem(
+   "binahayat-offline-session",
+   JSON.stringify(saved)
+  );
+
+ }
+
+
+ user = {
+  id:saved.id,
+  email:saved.email,
+  offline:true
+ };
+
+
+ showApp();
+
+}
+
+
+async function loadCloud(){
+
+ if(!user || user.offline || !navigator.onLine)
+  return;
+
+
+ try{
+
+  const result =
+  await supabaseClient
+  .from("app_data")
+  .select("data,updated_at")
+  .eq("user_id",user.id)
+  .maybeSingle();
+
+
+  if(result.error)
+   throw result.error;
+
+
+  if(result.data && result.data.data){
+
+   db = {
+    ...DEFAULT_DB,
+    ...result.data.data
+   };
+
+   db.tasks ||= {};
+   db.files ||= [];
+   db.customers ||= [];
+   db.study ||= [];
+   db.accounts ||= [];
+   db.contracts ||= [];
+
+   localSave();
+
+  }else{
+
+   await cloudSave();
+
+  }
+
+ }catch(error){
+
+  console.log("Cloud load error",error);
+
+ }
+
+}
+
+
+function showApp(){
+
+ document
+ .getElementById("auth")
+ .classList.add("hide");
+
+ document
+ .getElementById("app")
+ .classList.remove("hide");
+
+ renderAll();
+
+ document.getElementById("status").textContent =
+ user && user.offline
+ ?
+ "📴 حالت آفلاین • ذخیره روی گوشی فعال است"
+ :
+ "☁️ حساب ابری • "+(user?.email||"");
+
+}
+
+
+async function sync(){
+
+ if(!user){
+
+  alert("اول وارد حساب شو.");
+
+  return;
+ }
+
+
+ if(user.offline){
+
+  alert(
+   "این حساب فعلاً آفلاین است. برای فضای ابری، یک‌بار با اینترنت حساب ابری بساز و وارد شو."
+  );
+
+  return;
+ }
+
+
+ if(!navigator.onLine){
+
+  alert(
+   "اینترنت قطع است. اطلاعات روی گوشی محفوظ است."
+  );
+
+  return;
+ }
+
+
+ try{
+
+  await cloudSave();
+
+  document.getElementById("status").textContent =
+  "☁️ همگام‌سازی کامل شد • "+stamp();
+
+  alert("☁️ اطلاعات با فضای ابری همگام شد.");
+
+ }catch(error){
+
+  alert(
+   "همگام‌سازی انجام نشد؛ اطلاعات روی گوشی محفوظ است."
+  );
+
+ }
+
+}
