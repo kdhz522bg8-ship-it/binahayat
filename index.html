@@ -89,7 +89,7 @@ function loadSupabase(){
   return new Promise((resolve)=>{
     if(window.supabase){supabaseClient=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true}});return resolve(true)}
     const s=document.createElement("script");
-    s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    s.src="https://unpkg.com/@supabase/supabase-js@2";
     s.onload=()=>{try{supabaseClient=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true}});resolve(true)}catch(e){resolve(false)}};
     s.onerror=()=>resolve(false);
     document.head.appendChild(s);
