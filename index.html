@@ -1263,3 +1263,1494 @@ async function sync(){
  }
 
 }
+function tasksRender(){
+
+ const d = day();
+
+ if(!db.tasks[d])
+  db.tasks[d] = daily.map(()=>false);
+
+
+ const box =
+ document.getElementById("tasks");
+
+
+ box.innerHTML =
+ daily.map((text,i)=>`
+
+ <div class="task">
+
+ <input
+ type="checkbox"
+ ${db.tasks[d][i]?"checked":""}
+ onchange="taskChange(${i},this.checked)"
+ >
+
+ <span class="${db.tasks[d][i]?"done":""}">
+ ${text}
+ </span>
+
+ </div>
+
+ `).join("");
+
+
+ const count =
+ db.tasks[d].filter(Boolean).length;
+
+
+ document.getElementById("done").textContent =
+ count;
+
+ document.getElementById("pct").textContent =
+ Math.round(count/daily.length*100)+"٪";
+
+ document.getElementById("bar").style.width =
+ (count/daily.length*100)+"%";
+
+ localSave();
+
+}
+
+
+async function taskChange(i,value){
+
+ db.tasks[day()][i] = value;
+
+ await save();
+
+ tasksRender();
+
+}
+
+
+function coach(){
+
+ const count =
+ db.tasks[day()]
+ .filter(Boolean)
+ .length;
+
+ if(count<daily.length){
+
+  alert(
+   "🚨 هنوز "+
+   (daily.length-count)+
+   " کار باقی مانده."
+  );
+
+ }else{
+
+  alert("🏆 برنامه امروز کامل شد!");
+
+ }
+
+}
+
+
+async function readImages(list){
+
+ const result=[];
+
+ for(const file of list){
+
+  if(file.size>1200000)
+   continue;
+
+  const data =
+  await new Promise(resolve=>{
+
+   const reader =
+   new FileReader();
+
+   reader.onload =
+   ()=>resolve(reader.result);
+
+   reader.readAsDataURL(file);
+
+  });
+
+
+  result.push({
+   name:file.name,
+   type:file.type,
+   data
+  });
+
+ }
+
+ return result;
+
+}
+
+
+function fileCode(){
+
+ const numbers =
+ db.files.map(
+  x=>parseInt(
+   String(x.code||"")
+   .replace(/\D/g,"")
+  )||0
+ );
+
+ const next =
+ Math.max(0,...numbers)+1;
+
+ return "F"+String(next).padStart(3,"0");
+
+}
+
+
+async function addFile(){
+
+ const photos =
+ await readImages(
+  document.getElementById("photos").files
+ );
+
+
+ const file={
+
+  id:uid(),
+
+  code:
+   document.getElementById("fc").value.trim()
+   || fileCode(),
+
+  t:
+   document.getElementById("ft").value,
+
+  y:
+   document.getElementById("fty").value,
+
+  a:
+   document.getElementById("fa").value,
+
+  p:
+   document.getElementById("fp").value,
+
+  o:
+   document.getElementById("fo").value,
+
+  n:
+   document.getElementById("fn").value,
+
+  deal:
+   document.getElementById("deal").value,
+
+  swapWith:
+   document.getElementById("swapWith").value,
+
+  d:
+   document.getElementById("fd").value,
+
+  photos,
+
+  createdAt:now(),
+
+  updatedAt:now()
+
+ };
+
+
+ db.files.unshift(file);
+
+
+ [
+  "ft","fc","fa","fp",
+  "fo","fn","fd","swapWith"
+ ].forEach(id=>{
+  document.getElementById(id).value="";
+ });
+
+
+ document.getElementById("photos").value="";
+
+ document.getElementById("deal").value="sale";
+
+
+ await save();
+
+ renderFiles();
+ renderConsult();
+ tickerUpdate();
+
+ alert(
+  "🏡 فایل "+file.code+
+  " با موفقیت ثبت شد."
+ );
+
+}
+
+
+function dealText(deal){
+
+ if(deal==="swap")
+  return "تهاتر";
+
+ if(deal==="sale_swap")
+  return "فروش یا تهاتر";
+
+ if(deal==="rent")
+  return "رهن / اجاره";
+
+ return "فروش";
+
+}
+
+
+function renderFiles(){
+
+ const q =
+ (document.getElementById("fs").value||"")
+ .toLowerCase();
+
+
+ const list =
+ db.files.filter(
+  f =>
+  JSON.stringify(f)
+  .toLowerCase()
+  .includes(q)
+ );
+
+
+ document.getElementById("flist").innerHTML =
+ list.map(f=>`
+
+ <div class="item">
+
+ <span class="code">${f.code}</span>
+
+ <b>${f.t||"بدون عنوان"}</b>
+
+ <span class="tag">${f.y}</span>
+
+ <br><br>
+
+ 📐 متراژ: ${f.a||"-"}
+ <br>
+ 💰 قیمت: ${f.p||"-"}
+ <br>
+ 👤 مالک: ${f.o||"-"}
+ <br>
+ 📞 ${f.n||"-"}
+ <br>
+ 🔄 ${dealText(f.deal)}
+ ${f.swapWith?" • "+f.swapWith:""}
+
+ <br><br>
+
+ ${f.d||""}
+
+ <br>
+
+ ${
+ (f.photos||[])
+ .map(p=>`
+ <img
+ class="photo"
+ src="${p.data}"
+ alt="عکس فایل"
+ >
+ `).join("")
+ }
+
+ <br>
+
+ <span class="muted">
+ ثبت:
+ ${
+ f.createdAt
+ ?
+ new Date(f.createdAt)
+ .toLocaleString("fa-IR")
+ :
+ "-"
+ }
+ </span>
+
+ <div class="row">
+
+ <button
+ class="gray"
+ onclick="shareFile('${f.id}')">
+ 📤 ارسال / واتساپ
+ </button>
+
+ <button
+ class="gray"
+ onclick="deleteFile('${f.id}')">
+ 🗑 حذف
+ </button>
+
+ </div>
+
+ </div>
+
+ `).join("")
+ ||
+ '<div class="muted">فایلی ثبت نشده است.</div>';
+
+}
+
+
+async function deleteFile(id){
+
+ if(!confirm("این فایل حذف شود؟"))
+  return;
+
+ db.files =
+ db.files.filter(x=>x.id!==id);
+
+ await save();
+
+ renderFiles();
+ renderConsult();
+ tickerUpdate();
+
+}
+
+
+async function shareFile(id){
+
+ const f =
+ db.files.find(x=>x.id===id);
+
+ if(!f)
+  return;
+
+
+ const text =
+ `∞ املاک بینهایت
+
+${f.code} — ${f.t||""}
+
+نوع: ${f.y||""}
+متراژ: ${f.a||""}
+قیمت: ${f.p||""}
+مالک: ${f.o||""}
+
+نوع معامله: ${dealText(f.deal)}
+${f.swapWith?"تهاتر با: "+f.swapWith:""}
+
+${f.d||""}`;
+
+
+ const files=[];
+
+
+ for(const p of (f.photos||[])){
+
+  try{
+
+   const response =
+   await fetch(p.data);
+
+   const blob =
+   await response.blob();
+
+   files.push(
+    new File(
+     [blob],
+     p.name||"photo.jpg",
+     {
+      type:p.type||blob.type
+     }
+    )
+   );
+
+  }catch(e){}
+
+ }
+
+
+ try{
+
+  if(navigator.share){
+
+   if(
+    files.length &&
+    navigator.canShare &&
+    navigator.canShare({files})
+   ){
+
+    await navigator.share({
+     title:f.t||"فایل املاک",
+     text,
+     files
+    });
+
+   }else{
+
+    await navigator.share({
+     title:f.t||"فایل املاک",
+     text
+    });
+
+   }
+
+   return;
+
+  }
+
+ }catch(e){}
+
+
+ try{
+
+  await navigator.clipboard.writeText(text);
+
+  alert(
+   "متن فایل کپی شد. حالا WhatsApp را باز کن و ارسال کن."
+  );
+
+ }catch(e){
+
+  alert(text);
+
+ }
+
+}
+
+
+async function addCustomer(){
+
+ const customer={
+
+  id:uid(),
+
+  code:
+   "C"+
+   String(db.customers.length+1)
+   .padStart(3,"0"),
+
+  n:
+   document.getElementById("cn").value,
+
+  p:
+   document.getElementById("cp").value,
+
+  b:
+   document.getElementById("cb").value,
+
+  f:
+   document.getElementById("cf").value,
+
+  need:
+   document.getElementById("need").value,
+
+  note:
+   document.getElementById("customerNote").value,
+
+  createdAt:now(),
+
+  updatedAt:now()
+
+ };
+
+
+ db.customers.unshift(customer);
+
+
+ [
+  "cn","cp","cb",
+  "cf","need","customerNote"
+ ].forEach(id=>{
+  document.getElementById(id).value="";
+ });
+
+
+ await save();
+
+ renderCustomers();
+ renderConsult();
+ tickerUpdate();
+
+ alert(
+  "👤 مشتری "+customer.code+
+  " ثبت شد."
+ );
+
+}
+
+
+function renderCustomers(){
+
+ const q =
+ (document.getElementById("cs").value||"")
+ .toLowerCase();
+
+
+ const list =
+ db.customers.filter(
+  c =>
+  JSON.stringify(c)
+  .toLowerCase()
+  .includes(q)
+ );
+
+
+ document.getElementById("clist").innerHTML =
+ list.map(c=>`
+
+ <div class="item">
+
+ <b>${c.n||"بدون نام"}</b>
+
+ <span class="code">${c.code}</span>
+
+ <br>
+
+ 📞 ${c.p||"-"}
+
+ <br>
+
+ 💰 بودجه: ${c.b||"-"}
+
+ <br>
+
+ 🏡 ${c.need||"-"}
+
+ <br>
+
+ ${c.note||""}
+
+ <br>
+
+ <span class="muted">
+ ثبت:
+ ${new Date(c.createdAt)
+ .toLocaleString("fa-IR")}
+ </span>
+
+ </div>
+
+ `).join("")
+ ||
+ '<div class="muted">مشتری ثبت نشده است.</div>';
+
+}
+
+
+function initAds(){
+
+ const items=[
+  "انتخاب فایل مناسب",
+  "نوشتن تیتر قوی",
+  "انتخاب عکس مناسب",
+  "نوشتن توضیحات",
+  "انتشار آگهی",
+  "پاسخ به تماس‌ها",
+  "ثبت مشتری",
+  "پیگیری مشتری"
+ ];
+
+
+ document.getElementById("adTasks").innerHTML =
+ items.map(
+ x=>`
+ <div class="task">
+ <input type="checkbox">
+ <span>${x}</span>
+ </div>
+ `
+ ).join("");
+
+}
+
+
+function copyAd(){
+
+ const title =
+ document.getElementById("adtitle").value;
+
+ const text =
+ document.getElementById("adtext").value;
+
+ const finalText =
+ (title?title+"\n":"")+text;
+
+
+ navigator.clipboard
+ ?.writeText(finalText);
+
+
+ alert("📋 متن آگهی کپی شد.");
+
+}
+
+
+function initBook(){
+
+ document.getElementById("chapter").innerHTML =
+ chapters.map(
+ (x,i)=>
+ `<option value="${i}">${x[0]}</option>`
+ ).join("");
+
+
+ bookOpen();
+
+}
+
+
+function bookOpen(){
+
+ const c =
+ chapters[
+  +document.getElementById("chapter").value||0
+ ];
+
+
+ document.getElementById("bookTitle").textContent =
+ c[0];
+
+
+ document.getElementById("bookText").innerHTML =
+ `
+ <p>${c[1]}</p>
+ <p><b>تمرین:</b> همین امروز اجرا کن.</p>
+ `;
+
+}
+
+
+async function bookRead(){
+
+ const select =
+ document.getElementById("chapter");
+
+
+ db.study.unshift({
+
+  id:uid(),
+
+  d:day(),
+
+  l:
+   select.options[
+    select.selectedIndex
+   ].text,
+
+  at:now()
+
+ });
+
+
+ await save();
+
+ studyRender();
+
+}
+
+
+function studyRender(){
+
+ document.getElementById("history").innerHTML =
+ (db.study||[]).map(
+ x=>`
+
+ <div class="item">
+
+ ✅ ${x.d} — ${x.l}
+
+ <br>
+
+ <span class="muted">
+ ${new Date(x.at)
+ .toLocaleString("fa-IR")}
+ </span>
+
+ </div>
+
+ `
+ ).join("")
+ ||
+ '<div class="muted">هنوز مطالعه‌ای ثبت نشده.</div>';
+
+}
+
+
+async function addAccount(){
+
+ const amount =
+ Number(
+  document.getElementById("amount").value
+ );
+
+
+ if(!amount){
+
+  alert("مبلغ را وارد کن.");
+
+  return;
+ }
+
+
+ db.accounts.unshift({
+
+  id:uid(),
+
+  part:
+   document.getElementById("part").value,
+
+  type:
+   document.getElementById("type").value,
+
+  amount,
+
+  person:
+   document.getElementById("person").value,
+
+  desc:
+   document.getElementById("desc").value,
+
+  createdAt:now()
+
+ });
+
+
+ [
+  "amount","person","desc"
+ ].forEach(id=>{
+  document.getElementById(id).value="";
+ });
+
+
+ await save();
+
+ accountsRender();
+
+}
+
+
+async function addContract(){
+
+ const title =
+ document.getElementById("ct").value.trim();
+
+
+ if(!title){
+
+  alert("عنوان قرارداد را وارد کن.");
+
+  return;
+ }
+
+
+ db.contracts.unshift({
+
+  id:uid(),
+
+  title,
+
+  amount:
+   Number(
+    document.getElementById("ca").value
+   )||0,
+
+  commission:
+   Number(
+    document.getElementById("cm").value
+   )||0,
+
+  my:
+   Number(
+    document.getElementById("ms").value
+   )||0,
+
+  partner:
+   Number(
+    document.getElementById("ps").value
+   )||0,
+
+  createdAt:now()
+
+ });
+
+
+ [
+  "ct","ca","cm","ms","ps"
+ ].forEach(id=>{
+  document.getElementById(id).value="";
+ });
+
+
+ await save();
+
+ accountsRender();
+
+}
+
+
+function money(n){
+
+ return Number(n||0)
+ .toLocaleString("fa-IR");
+
+}
+
+
+function accountsRender(){
+
+ const a =
+ db.accounts||[];
+
+
+ document.getElementById("rec").textContent =
+ money(
+  a.filter(x=>x.type==="receivable")
+  .reduce((s,x)=>s+x.amount,0)
+ );
+
+
+ document.getElementById("pay").textContent =
+ money(
+  a.filter(x=>x.type==="payable")
+  .reduce((s,x)=>s+x.amount,0)
+ );
+
+
+ document.getElementById("inc").textContent =
+ money(
+  a.filter(x=>x.type==="income")
+  .reduce((s,x)=>s+x.amount,0)
+ );
+
+
+ document.getElementById("exp").textContent =
+ money(
+  a.filter(x=>x.type==="expense")
+  .reduce((s,x)=>s+x.amount,0)
+ );
+
+
+ document.getElementById("alist").innerHTML =
+ a.map(x=>`
+
+ <div class="item">
+
+ <b>${x.part}</b>
+
+ • ${x.person||"-"}
+
+ <br>
+
+ ${x.desc||""}
+
+ • ${money(x.amount)} تومان
+
+ <br>
+
+ <span class="muted">
+ ${new Date(x.createdAt)
+ .toLocaleString("fa-IR")}
+ </span>
+
+ </div>
+
+ `).join("")
+ ||
+ '<div class="muted">حسابی ثبت نشده.</div>';
+
+
+ document.getElementById("contracts").innerHTML =
+ (db.contracts||[]).map(x=>`
+
+ <div class="item">
+
+ <b>${x.title}</b>
+
+ <br>
+
+ معامله:
+ ${money(x.amount)}
+
+ تومان
+
+ <br>
+
+ کمیسیون:
+ ${money(x.commission)}
+
+ تومان
+
+ <br>
+
+ سهم من:
+ ${money(x.my)}
+
+ • سهم شریک:
+ ${money(x.partner)}
+
+ <br>
+
+ <span class="muted">
+ ${new Date(x.createdAt)
+ .toLocaleString("fa-IR")}
+ </span>
+
+ </div>
+
+ `).join("")
+ ||
+ '<div class="muted">قراردادی ثبت نشده.</div>';
+
+}
+
+
+function scoreCustomerFile(c,f){
+
+ let score=0;
+
+ const reasons=[];
+
+
+ const budget =
+ Number(
+  String(c.b||"")
+  .replace(/[^\d]/g,"")
+ )||0;
+
+
+ const price =
+ Number(
+  String(f.p||"")
+  .replace(/[^\d]/g,"")
+ )||0;
+
+
+ const need =
+ (c.need||"").toLowerCase();
+
+
+ const type =
+ (f.y||"").toLowerCase();
+
+
+ if(
+  need &&
+  (
+   need.includes(type) ||
+   type.includes(need)
+  )
+ ){
+
+  score+=35;
+  reasons.push("نوع ملک مناسب");
+
+ }
+
+
+ if(budget && price){
+
+  const diff =
+  Math.abs(price-budget) /
+  Math.max(budget,1);
+
+
+  if(diff<=.10){
+
+   score+=40;
+   reasons.push("قیمت نزدیک بودجه");
+
+  }else if(diff<=.25){
+
+   score+=25;
+   reasons.push("قیمت نسبتاً نزدیک");
+
+  }else if(diff<=.50){
+
+   score+=10;
+
+  }
+
+ }
+
+
+ if(
+  f.deal==="swap" ||
+  f.deal==="sale_swap"
+ ){
+
+  score+=10;
+  reasons.push("گزینه تهاتر");
+
+ }
+
+
+ if(
+  (
+   need.includes("تهاتر") ||
+   need.includes("تعویض")
+  ) &&
+  (
+   f.deal==="swap" ||
+   f.deal==="sale_swap"
+  )
+ ){
+
+  score+=15;
+  reasons.push("نیاز تهاتر");
+
+ }
+
+
+ return {
+  score:Math.min(100,score),
+  reasons
+ };
+
+}
+
+
+function smartMatchCustomer(){
+
+ const id =
+ document.getElementById("matchCustomer").value;
+
+
+ if(!id){
+
+  document.getElementById("customerMatches").innerHTML="";
+  return;
+
+ }
+
+
+ const c =
+ db.customers.find(x=>x.id===id);
+
+
+ if(!c)return;
+
+
+ const list =
+ db.files
+ .map(
+  f=>({
+   f,
+   m:scoreCustomerFile(c,f)
+  })
+ )
+ .filter(x=>x.m.score>0)
+ .sort(
+  (a,b)=>b.m.score-a.m.score
+ )
+ .slice(0,8);
+
+
+ document.getElementById("customerMatches").innerHTML =
+ list.length
+ ?
+ list.map(x=>`
+
+ <div class="item match">
+
+ <b>
+ ${x.f.code} — ${x.f.t||"بدون عنوان"}
+ </b>
+
+ <br>
+
+ 🎯 تطابق:
+ <b>${x.m.score}%</b>
+
+ <br>
+
+ ${x.m.reasons.join(" • ")||"نیاز به بررسی"}
+
+ <br>
+
+ 💰 ${x.f.p||"-"}
+
+ • 🔄 ${dealText(x.f.deal)}
+
+ </div>
+
+ `).join("")
+ :
+ "فایل مناسب پیدا نشد.";
+
+
+ document.getElementById("advice").innerHTML =
+ `
+ <b>💡 پیشنهاد مشاور:</b>
+
+ ابتدا گزینه‌های بالای ۷۰٪ را پیگیری کن.
+ اگر تهاتر دارد، ارزش دو طرف معامله و مابه‌التفاوت
+ را جداگانه بررسی کن.
+
+ این امتیاز فقط پیشنهاد نرم‌افزاری است و جای بررسی
+ واقعی ملک، سند و شرایط معامله را نمی‌گیرد.
+ `;
+
+}
+
+
+function smartMatchFile(){
+
+ const id =
+ document.getElementById("matchFile").value;
+
+
+ if(!id){
+
+  document.getElementById("fileMatches").innerHTML="";
+  return;
+
+ }
+
+
+ const f =
+ db.files.find(x=>x.id===id);
+
+
+ if(!f)return;
+
+
+ const list =
+ db.customers
+ .map(
+  c=>({
+   c,
+   m:scoreCustomerFile(c,f)
+  })
+ )
+ .filter(x=>x.m.score>0)
+ .sort(
+  (a,b)=>b.m.score-a.m.score
+ )
+ .slice(0,8);
+
+
+ document.getElementById("fileMatches").innerHTML =
+ list.length
+ ?
+ list.map(x=>`
+
+ <div class="item match">
+
+ <b>
+ ${x.c.n||"بدون نام"}
+ —
+ ${x.c.code}
+ </b>
+
+ <br>
+
+ 🎯 تطابق:
+ <b>${x.m.score}%</b>
+
+ <br>
+
+ ${x.m.reasons.join(" • ")}
+
+ </div>
+
+ `).join("")
+ :
+ "مشتری مناسب پیدا نشد.";
+
+}
+
+
+function renderConsult(){
+
+ const customer =
+ document.getElementById("matchCustomer");
+
+
+ const file =
+ document.getElementById("matchFile");
+
+
+ customer.innerHTML =
+ '<option value="">انتخاب مشتری...</option>'+
+ db.customers.map(
+ c=>
+ `<option value="${c.id}">
+ ${c.code} — ${c.n||"بدون نام"}
+ </option>`
+ ).join("");
+
+
+ file.innerHTML =
+ '<option value="">انتخاب فایل...</option>'+
+ db.files.map(
+ f=>
+ `<option value="${f.id}">
+ ${f.code} — ${f.t||"بدون عنوان"}
+ </option>`
+ ).join("");
+
+
+ const swaps =
+ db.files.filter(
+  f =>
+  f.deal==="swap" ||
+  f.deal==="sale_swap"
+ );
+
+
+ document.getElementById("barterMatches").innerHTML =
+ swaps.length
+ ?
+ swaps.map(f=>`
+
+ <div class="item match">
+
+ <b>
+ ${f.code} — ${f.t||"-"}
+ </b>
+
+ <br>
+
+ 🔄 نیاز تهاتر:
+ ${f.swapWith||"مشخص نشده"}
+
+ <br>
+
+ 💰 ${f.p||"-"}
+
+ </div>
+
+ `).join("")
+ :
+ "فایل تهاتری ثبت نشده.";
+
+}
+
+
+function tickerUpdate(){
+
+ const items=[
+
+  ...db.files.map(
+   x=>`🏡 ${x.code} • ${x.t||"فایل"}`
+  ),
+
+  ...db.customers.map(
+   x=>`👤 ${x.code} • ${x.n||"مشتری"}`
+  )
+
+ ];
+
+
+ document.getElementById("ticker").textContent =
+ items.length
+ ?
+ items[
+  Math.floor(Date.now()/3500)%items.length
+ ]
+ :
+ "∞ امروز فایل جدید بگیر و مشتری پیگیری کن";
+
+}
+
+
+function backup(){
+
+ const payload = {
+
+  app:"Binahayat",
+
+  version:"V2",
+
+  exportedAt:now(),
+
+  data:db
+
+ };
+
+
+ const blob =
+ new Blob(
+  [JSON.stringify(payload,null,2)],
+  {
+   type:"application/json"
+  }
+ );
+
+
+ const link =
+ document.createElement("a");
+
+
+ link.href =
+ URL.createObjectURL(blob);
+
+
+ link.download =
+ "Binahayat-Backup-"+day()+".json";
+
+
+ document.body.appendChild(link);
+
+ link.click();
+
+ link.remove();
+
+ setTimeout(
+  ()=>URL.revokeObjectURL(link.href),
+  1000
+ );
+
+
+}
+
+
+function restore(event){
+
+ const file =
+ event.target.files[0];
+
+
+ if(!file)return;
+
+
+ const reader =
+ new FileReader();
+
+
+ reader.onload =
+ async function(){
+
+  try{
+
+   const result =
+   JSON.parse(reader.result);
+
+
+   if(!result.data)
+    throw new Error("invalid");
+
+
+   db = {
+    ...DEFAULT_DB,
+    ...result.data
+   };
+
+
+   db.tasks ||= {};
+   db.files ||= [];
+   db.customers ||= [];
+   db.study ||= [];
+   db.accounts ||= [];
+   db.contracts ||= [];
+
+
+   await save();
+
+   renderAll();
+
+
+   alert(
+    "📦 همه اطلاعات با موفقیت بازیابی شد."
+   );
+
+
+  }catch(error){
+
+   alert(
+    "❌ فایل پشتیبان معتبر نیست."
+   );
+
+  }
+
+ };
+
+
+ reader.readAsText(file);
+
+ event.target.value="";
+
+}
+
+
+function go(id,button){
+
+ document
+ .querySelectorAll(".page")
+ .forEach(
+  x=>x.classList.remove("active")
+ );
+
+
+ document
+ .getElementById(id)
+ .classList.add("active");
+
+
+ document
+ .querySelectorAll("nav button")
+ .forEach(
+  x=>x.classList.remove("on")
+ );
+
+
+ button.classList.add("on");
+
+}
+
+
+function renderAll(){
+
+ tasksRender();
+ renderFiles();
+ renderCustomers();
+ initAds();
+ initBook();
+ studyRender();
+ accountsRender();
+ renderConsult();
+ tickerUpdate();
+
+}
+
+
+window.addEventListener(
+ "online",
+ async function(){
+
+  if(!user || user.offline)
+   return;
+
+
+  document.getElementById("status").textContent =
+  "🌐 اینترنت وصل شد؛ همگام‌سازی...";
+
+
+  try{
+
+   await cloudSave();
+
+   document.getElementById("status").textContent =
+   "☁️ همگام شد • "+stamp();
+
+  }catch(e){
+
+   document.getElementById("status").textContent =
+   "⚠️ اینترنت وصل شد ولی همگام‌سازی ناموفق بود.";
+
+  }
+
+ }
+);
+
+
+window.addEventListener(
+ "offline",
+ function(){
+
+  if(user){
+
+   document.getElementById("status").textContent =
+   "📴 آفلاین • ذخیره روی گوشی فعال است";
+
+  }
+
+ }
+);
